@@ -1,5 +1,6 @@
 # HAFspec
 Author: Mingjun Liu (mjliu@bao.ac.cn), Yilong Wang (wangyilong@nao.cas.cn)
+
 Version 6, released on Dec 8, 2025.
 
 ## Introduction
