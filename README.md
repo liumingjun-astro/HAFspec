@@ -34,37 +34,37 @@ The entire process of HAFspec is summarized as follows.
 
 Read data from the input file and window.py ---- main_cal.run_spec() 
 
-| find the input data file ---- lines 17-96 in main_cal.py & main_cal.find_name()
+|   find the input data file ---- lines 17-96 in main_cal.py & main_cal.find_name()
     
 Spectral calculation ---- main_cal.main()
 
-| check data ---- lines 216-249 in main_cal.py
+|   check data ---- lines 216-249 in main_cal.py
 
-| | obtain frequency ---- main_cal.find_domain(), method.find_nu(), method.cal_nu()
+|   |   obtain frequency ---- main_cal.find_domain(), method.find_nu(), method.cal_nu()
 
-| | obtain geometry ---- lines 257-266 in main_cal.py
+|   |   obtain geometry ---- lines 257-266 in main_cal.py
 
-| | seed photons ---- lines 268-273 in main_cal.py & method.seed_photon()
+|   |   seed photons ---- lines 268-273 in main_cal.py & method.seed_photon()
 
-| | | calculate emissivity ---- method.emissivity(), method.gaunt(), method.i_m()
+|   |   |   calculate emissivity ---- method.emissivity(), method.gaunt(), method.i_m()
 
-| | | self-absorption ---- lines 32-41 in method.py & method.blackbody()
+|   |   |   self-absorption ---- lines 32-41 in method.py & method.blackbody()
 
-| | assign weight ---- lines 280-281 in main_cal.py & main_cal.get_number()
+|   |   assign weight ---- lines 280-281 in main_cal.py & main_cal.get_number()
 
-| | scattering ---- lines 283-297 in main_cal.py
+|   |   scattering ---- lines 283-297 in main_cal.py
 
-| | | sample data ---- method.get_soft()
+|   |   |   sample data ---- method.get_soft()
 
-| | | scattering for each super-photon ---- method.scattering()
+|   |   |   scattering for each super-photon ---- method.scattering()
 
-| | | | compute escape probability ---- method.mean_free_path() using pre-computed data by method.get_mfp_data()
+|   |   |   |   compute escape probability ---- method.mean_free_path() using pre-computed data by method.get_mfp_data()
 
-| | | | collect escaped photons ---- lines 329-332 in method.py
+|   |   |   |   collect escaped photons ---- lines 329-332 in method.py
 
-| | | | Comptonization --- method.compton(), method.find_moment(), method.rand_unit_vector()
+|   |   |   |   Comptonization --- method.compton(), method.find_moment(), method.rand_unit_vector()
 
-| | recording photon information ---- lines 300-319 in main_cal.py
+|   | recording photon information ---- lines 300-319 in main_cal.py
     
 Save results ---- lines 104-183 in main_cal.py
     
