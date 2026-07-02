@@ -1,7 +1,7 @@
 # HAFspec
 Author: Mingjun Liu (mjliu@bao.ac.cn), Yilong Wang (wangyilong@nao.cas.cn)
 
-Version 6, released on Dec 8, 2025.
+Version 7.0, released on July 2, 2026.
 
 ## Introduction
 HAFspec is a Monte Carlo (MC) simulation code for computing radiative transfer in hot accretion flows. It was initially developed to calculate the spectra of hot accretion flows in our disk-corona models [1, 2], but can also be applied to more generalized cases. In HAFspec, we focus on the radiative transfer along the vertical direction (z-direction) in an axisymmetric accretion flow (r-direction).
