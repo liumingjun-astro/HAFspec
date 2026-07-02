@@ -1,5 +1,5 @@
-# HAFspec 1D Monte Carlo radiative transfer code for calculating spectra from hot accretion flow
-# Version: 6.0 (2025-12-08)
+# HAFspec: 1D Monte Carlo radiative transfer code for calculating spectra from hot accretion flow
+# Version: 7.0 (2026-07-02)
 # Author: Mingjun Liu (mjliu@bao.ac.cn), Yilong Wang (wangyilong@nao.cas.cn)
 # National Astronomical Observatories, Chinese Academy of Sciences
 
