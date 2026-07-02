@@ -274,7 +274,7 @@ def main(R_list, T_i_list, T_e_list, T_d_list, tau_es_list, H_list, B_list, m=10
 
     for num_nu in range(bins_use):
         # From N_nu to N_nu * dnu
-        photon_file[:, num_nu, :] *= nu_list[num_nu] * dlg_nu
+        photon_file[:, num_nu, :] *= nu_list[num_nu] * dlg_nu * math.log(10)
 
     # Calculation the spectrum
     photons_use, weight, num_file = get_number(photons, photon_file, energy_file, peak_min_gn=10, error_gn=0.3)
@@ -282,8 +282,9 @@ def main(R_list, T_i_list, T_e_list, T_d_list, tau_es_list, H_list, B_list, m=10
 
     for num in range(photons_use):
         loc_r, loc_nu, flag = method.get_soft(inform, num_file)
+        # Since the energy grid is log10(nu), so we direct employ "nu_list * dlg_nu"
         one_spec = method.scattering(nu_list[loc_nu], n_e_list[loc_r], T_e_list[loc_r], H_list[loc_r], nu_list,
-                                     error) * weight[loc_r, loc_nu, flag] / nu_list / dlg_nu  # from dN to N_nu
+                                     error, False) * weight[loc_r, loc_nu, flag] / nu_list / dlg_nu  # from dN to N_nu
         seed_total_list[loc_nu] += weight[loc_r, loc_nu, flag] / nu_list[
             loc_nu] / dlg_nu  # Count the used seed photon number
         num_total_list += one_spec
@@ -314,6 +315,7 @@ def main(R_list, T_i_list, T_e_list, T_d_list, tau_es_list, H_list, B_list, m=10
 
     en_total[0] = L_Edd
     for col in range(3):
+        # Since the energy grid is log10(nu), so we direct employ "nu_list * dlg_nu"
         en_total[col + 1] = en_data[:, col + 2].sum() * dlg_nu
 
     return en_total, num_data, flux_data, en_data
