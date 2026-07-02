@@ -181,7 +181,7 @@ def cal_nu(nu_cn, T_e_cn, n_e_cn, H_cn, B_cn, R_cn, cof_br_cn, task_cn):
         The error for compute self-absorption frequency
 
     """
-    x_cn = h * nu_cn / k * T_e_cn
+    x_cn = h * nu_cn / k / T_e_cn
     theta_e_cn = k * T_e_cn / (m_e * c ** 2)
     if task_cn == 'nu_ff':
         # Absorption optical depth for free-free process equals to 1, see Rybicki & Lightman 1979, formula [5.18]
@@ -332,8 +332,8 @@ def scattering(nu_sca, n_e_sca, T_sca, H_sca, nu_list_sca, w_min_sca=1e-6, compl
             w0_sca *= 1 - escape_sca
 
             # Compute the frequency and direction of super-photons after Compton scattering
-            p_sca = find_moment(T_sca)
-            nu_sca, omega_sca = compton(nu_sca, omega_sca, p_sca)
+            p_sca, v_sca = find_moment(T_sca, omega_sca, nu_sca)
+            nu_sca, omega_sca = compton(nu_sca, omega_sca, p_sca, v_sca)
         return N_nu_sca
     else:
         if omega_sca[2] < 0:
@@ -357,18 +357,19 @@ def scattering(nu_sca, n_e_sca, T_sca, H_sca, nu_list_sca, w_min_sca=1e-6, compl
             h0_sca = h0_sca % H_sca
 
             # Compute the frequency and direction of super-photons after Compton scattering
-            p_sca = find_moment(T_sca)
-            nu_sca, omega_sca = compton(nu_sca, omega_sca, p_sca)
+            p_sca, v_sca = find_moment(T_sca, omega_sca, nu_sca)
+            nu_sca, omega_sca = compton(nu_sca, omega_sca, p_sca, v_sca)
         return N_nu_sca
 
 
-def compton(nu_comp, omega_comp, p_comp):
+def compton(nu_comp, omega_comp, p_comp, v_comp):
     """Calculate the frequency and direction of photon after Compton scattering
 
     Args:
         nu_comp: The frequency of photon before Compton scattering
         omega_comp: The direction of wavevector for photon before Compton scattering
         p_comp: The momentum of electron before Compton scattering
+        v_comp: The direction of electron velocity
 
     Return:
         nu_p_comp: The frequency of photon after Compton scattering
@@ -380,37 +381,37 @@ def compton(nu_comp, omega_comp, p_comp):
         Ghosh, 2013, PhD thesis, formula [2.20], [2.21], [3.35]-[3.45]
 
     """
-    beta_comp = p_comp / (p_comp ** 2 + (m_e * c) ** 2) ** 0.5
-    gamma_comp = (1 - beta_comp ** 2) ** -0.5
-    nu_p_comp = nu_comp
-    omega_p_comp = omega_comp
-    condition_fm = 0
-    while condition_fm <= 0:
+    beta_comp = p_comp / math.sqrt(p_comp * p_comp + m_e * m_e * c * c)
+    gamma_comp = 1.0 / math.sqrt(1.0 - beta_comp * beta_comp)
+    nu_p_comp, omega_p_comp = nu_comp, omega_comp
+    rho_comp = math.sqrt(v_comp[0] * v_comp[0] + v_comp[1] * v_comp[1])
+    w_comp = np.array([v_comp[1], -v_comp[0], 0]) / rho_comp
+    t_comp = np.array([v_comp[0] * v_comp[2], v_comp[1] * v_comp[2], -rho_comp * rho_comp]) / rho_comp
+    condition_fm = 0.0
+    while condition_fm <= 0.0:
         # Compute a possible direction of scattering
         x1_comp = random.random()
-        mu_p_comp = (beta_comp + 2 * x1_comp - 1) / (1 + beta_comp * (2 * x1_comp - 1))
-        phi_p_comp = 2 * math.pi * random.random()
+        mu_p_comp = (beta_comp + 2.0 * x1_comp - 1.0) / (1.0 + beta_comp * (2.0 * x1_comp - 1.0))
+        phi_p_comp = 2.0 * math.pi * random.random()
 
         # Compute the vector and scattering angle
-        v_comp = rand_unit_vector()
-        rho_comp = (v_comp[0] ** 2 + v_comp[1] ** 2) ** 0.5
-        w_comp = np.array([v_comp[1], -v_comp[0], 0]) / rho_comp
-        t_comp = np.array([v_comp[0] * v_comp[2], v_comp[1] * v_comp[2], -rho_comp ** 2]) / rho_comp
-        omega_p_comp = mu_p_comp * v_comp + (1 - mu_p_comp ** 2) ** 0.5 * (
+        omega_p_comp = mu_p_comp * v_comp + math.sqrt(1 - mu_p_comp * mu_p_comp) * (
                 math.cos(phi_p_comp) * w_comp + math.sin(phi_p_comp) * t_comp)
         sca_comp = np.dot(omega_comp, omega_p_comp)
         mu_comp = np.dot(omega_comp, v_comp)
 
         # Compute the factor of Y and the ratio of x
-        x_comp = 2 * h * nu_comp / (m_e * c ** 2) * gamma_comp * (1 - mu_comp * beta_comp)
-        x_ra_comp = 1 / (1 + h * nu_comp * (1 - sca_comp) / (gamma_comp * m_e * c ** 2 * (1 - mu_p_comp * beta_comp)))
+        x_comp = 2.0 * h * nu_comp / (m_e * c * c) * gamma_comp * (1.0 - mu_comp * beta_comp)
+        x_ra_comp = 1.0 / (
+                1.0 + h * nu_comp * (1.0 - sca_comp) / (gamma_comp * m_e * c * c * (1.0 - mu_p_comp * beta_comp)))
         x_p_comp = x_comp * x_ra_comp
-        Y_comp = x_ra_comp ** -2 * (
-                1 / x_ra_comp + x_ra_comp + 4 * (1 / x_comp - 1 / x_p_comp) + 4 * (1 / x_comp - 1 / x_p_comp) ** 2)
+        diff_inv_comp = 1.0 / x_comp - 1.0 / x_p_comp
+        Y_comp = (
+                         1.0 / x_ra_comp + x_ra_comp + 4.0 * diff_inv_comp + 4.0 * diff_inv_comp * diff_inv_comp) / x_ra_comp / x_ra_comp
 
         # Produce random number and test the selection condition
-        condition_fm = Y_comp - 2 * random.random()
-        nu_p_comp = x_p_comp / (2 * gamma_comp * (1 - mu_p_comp * beta_comp)) * m_e * c ** 2 / h
+        condition_fm = Y_comp - 2.0 * random.random()
+        nu_p_comp = x_p_comp / (2.0 * gamma_comp * (1 - mu_p_comp * beta_comp)) * m_e * c * c / h
     return nu_p_comp, omega_p_comp
 
 
@@ -440,21 +441,24 @@ def mean_free_path(nu_mfp, T_mfp, n_e_mfp):
         loc_nu_mfp = 29
     dt_mfp = np.minimum(math.log10(T_mfp) - loc_t_mfp, 1)
     dnu_mfp = np.minimum(math.log10(nu_mfp) - loc_nu_mfp, 1)
-    lambda_mfp = data_mfp[loc_t_mfp][loc_nu_mfp] * dt_mfp * dnu_mfp
-    lambda_mfp += data_mfp[loc_t_mfp][loc_nu_mfp + 1] * dt_mfp * (1 - dnu_mfp)
-    lambda_mfp += data_mfp[loc_t_mfp + 1][loc_nu_mfp] * (1 - dt_mfp) * dnu_mfp
-    lambda_mfp += data_mfp[loc_t_mfp + 1][loc_nu_mfp + 1] * (1 - dt_mfp) * (1 - dnu_mfp)
+    lambda_mfp = data_mfp[loc_t_mfp][loc_nu_mfp] * (1 - dt_mfp) * (1 - dnu_mfp)
+    lambda_mfp += data_mfp[loc_t_mfp][loc_nu_mfp + 1] * (1 - dt_mfp) * dnu_mfp
+    lambda_mfp += data_mfp[loc_t_mfp + 1][loc_nu_mfp] * dt_mfp * (1 - dnu_mfp)
+    lambda_mfp += data_mfp[loc_t_mfp + 1][loc_nu_mfp + 1] * dt_mfp * dnu_mfp
     return lambda_mfp / n_e_mfp
 
 
-def find_moment(T_fm):
+def find_moment(T_fm, omega_fm, nu_fm):
     """Select the moment of electrons by rejection technique
 
     Args:
         T_fm: The temperature of electrons
+        omega_fm: The direction of wavevector for photon before Compton scattering
+        nu_fm: The frequency of photon before Compton scattering
 
     Return:
         p_fm: The moment of electrons
+        v_fm: The direction of electron velocity
 
     Ref:
         Pozdnyakov et al. 1977, SvA, Section 4.a
@@ -462,28 +466,33 @@ def find_moment(T_fm):
         Ghosh, 2013, PhD thesis, Section 3.3.2
 
     """
-    theta_fm = k * T_fm / (m_e * c ** 2)
-    condition_fm = 0
-    p_fm = 0
-    if theta_fm <= 0.29:
-        while condition_fm <= 0:
-            x1_fm = random.random()
-            x2_fm = random.random()
-            x1_p_fm = -1.5 * math.log(x1_fm)
-            p_fm = m_e * c * (theta_fm * x1_p_fm * (2 + theta_fm * x1_p_fm)) ** 0.5
-            condition_fm = 0.151 * (1 + theta_fm * x1_p_fm) ** 2 * x1_p_fm * (
-                    2 + theta_fm * x1_p_fm) * x1_fm - x2_fm ** 2
-    else:
-        while condition_fm <= 0:
-            x1_fm = random.random()
-            x2_fm = random.random()
-            x3_fm = random.random()
-            x4_fm = random.random()
-            eta_p_fm = - theta_fm * math.log(x1_fm * x2_fm * x3_fm)
-            eta_pp_fm = - theta_fm * math.log(x1_fm * x2_fm * x3_fm * x4_fm)
-            p_fm = m_e * c * eta_p_fm
-            condition_fm = eta_pp_fm ** 2 - eta_p_fm ** 2 - 1
-    return p_fm
+    theta_fm = k * T_fm / (m_e * c * c)
+    condition_fm, verify_fm = 0.0, 0.0
+    p_fm, v_fm = 0.0, np.array([0, 0, 0])
+    while verify_fm <= 0.0:
+        if theta_fm <= 0.29:
+            while condition_fm <= 0.0:
+                x1_fm = random.random()
+                x2_fm = random.random()
+                x1_p_fm = -1.5 * math.log(x1_fm)
+                theta_x1_fm = theta_fm * x1_p_fm
+                p_fm = m_e * c * math.sqrt(theta_x1_fm * (2.0 + theta_x1_fm))
+                condition_fm = 0.151 * (1.0 + theta_x1_fm) ** 2 * x1_p_fm * (2.0 + theta_x1_fm) * x1_fm - x2_fm * x2_fm
+        else:
+            while condition_fm <= 0:
+                x123_fm = random.random() * random.random() * random.random()
+                x4_fm = random.random()
+                eta_p_fm = - theta_fm * math.log(x123_fm)
+                eta_pp_fm = - theta_fm * math.log(x123_fm * x4_fm)
+                p_fm = m_e * c * eta_p_fm
+                condition_fm = eta_pp_fm * eta_pp_fm - eta_p_fm * eta_p_fm - 1.0
+        beta_fm = p_fm / math.sqrt(p_fm * p_fm + m_e * m_e * c * c)
+        gamma_fm = 1.0 / math.sqrt(1.0 - beta_fm * beta_fm)
+        v_fm = rand_unit_vector()
+        mu_fm = np.dot(omega_fm, v_fm)
+        x_p_fm = 2.0 * h * nu_fm / (m_e * c * c) * gamma_fm * (1.0 - mu_fm * beta_fm)
+        verify_fm = 0.375 * sigma_kn(x_p_fm) * (1.0 - mu_fm / c) - random.random()
+    return p_fm, v_fm
 
 
 def rand_unit_vector():
@@ -493,12 +502,13 @@ def rand_unit_vector():
         A random unit vector
 
     """
-    theta_ruv = math.pi * random.random()
-    phi_ruv = 2 * math.pi * random.random()
-    v1_ruv = math.sin(theta_ruv) * math.cos(phi_ruv)
-    v2_ruv = math.sin(theta_ruv) * math.sin(phi_ruv)
-    v3_ruv = math.cos(theta_ruv)
-    return np.array([v1_ruv, v2_ruv, v3_ruv])
+    while True:
+        x_ruv = 2.0 * random.random() - 1.0
+        y_ruv = 2.0 * random.random() - 1.0
+        s_ruv = x_ruv * x_ruv + y_ruv * y_ruv
+        if s_ruv < 1.0:
+            factor_ruv = 2.0 * math.sqrt(1.0 - s_ruv)
+            return np.array([factor_ruv * x_ruv, factor_ruv * y_ruv, 1.0 - 2.0 * s_ruv])
 
 
 def get_mfp_data(nu_gmd, T_gmd, n_e_gmd):
@@ -531,6 +541,28 @@ def get_mfp_data(nu_gmd, T_gmd, n_e_gmd):
         phi_gmd += phi_cs(x_up_gmd) - phi_cs(x_down_gmd)
     g_gmd = g_gmd / (0.375 * sigma_T * n_e_gmd)
     return g_gmd * H_gmd ** 2 / phi_gmd
+
+
+def sigma_kn(x_kn):
+    """Calculated the energy-dependent part in Klein-Nishina cross-section
+
+    Args:
+        x_kn: The dimensionless photon energy
+
+    Return:
+        The energy-dependent part in Klein-Nishina cross-section, sigma(x) / (2 * pi * r^2)
+
+    Ref:
+        Pozdnyakov et al. 1983, ASPRv, Section 9.4
+        Ghosh, 2013, PhD thesis, formula [3.23]
+
+    """
+    if x_kn <= 0.5:
+        return 1.0 / 3.0 + 0.141 * x_kn - 0.12 * x_kn * x_kn + (1.0 + 0.5 * x_kn) / (1.0 + x_kn) / (1.0 + x_kn)
+    elif x_kn <= 3.5:
+        return (math.log(1.0 + x_kn) + 0.06) / x_kn
+    else:
+        return (math.log(1.0 + x_kn) + 0.5 - 1.0 / (2.0 + 0.076 * x_kn)) / x_kn
 
 
 def phi_cs(x_cs):
